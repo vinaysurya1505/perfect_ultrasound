@@ -1459,13 +1459,15 @@
                             const postDiscountTotal = Math.max(0, subtotal - discountAmount);
                             const total = postDiscountTotal * (1 + gstPercent / 100);
 
-                    const counterRef = db.collection('metadata').doc('counters');
-                    const newBillNumber = await db.runTransaction(async t => {
-                        const counterDoc = await t.get(counterRef);
-                        if (!counterDoc.exists) throw "Bill counter not found!";
-                        const newNo = counterDoc.data().billNo;
-                        t.update(counterRef, { billNo: FieldValue.increment(1) });
-                        return `PDB${newNo}`;
+                    // Allocate next bill number from meta/billing (prefix PD)
+                    const billingRef = db.collection('meta').doc('billing');
+                    const newBillNumber = await db.runTransaction(async (tx) => {
+                        const snap = await tx.get(billingRef);
+                        if (!snap.exists) throw new Error('Bill counter not found! Please create meta/billing with nextNumber.');
+                        const data = snap.data() || {};
+                        const currentNumber = typeof data.nextNumber === 'number' ? data.nextNumber : 20010000;
+                        tx.update(billingRef, { nextNumber: currentNumber + 1, lastUpdated: Timestamp.now() });
+                        return `PD${currentNumber}`;
                     });
                     
                             const referredById = document.getElementById('referred-by').value;
