@@ -1134,7 +1134,7 @@
             `;
             
             document.getElementById('bill-form').innerHTML = `
-                        <fieldset class="border p-4 rounded-md mb-4"><legend class="px-2 font-semibold">Patient Details</legend><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-sm">Patient Name*</label><input type="text" id="patient-name" class="w-full p-2 border rounded-md" required></div><div><label class="block text-sm">Phone</label><input type="tel" id="patient-phone" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">Age</label><input type="number" id="patient-age" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">Gender</label><select id="patient-gender" class="w-full p-2 border rounded-md"><option>Male</option><option>Female</option><option>Other</option></select></div><div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4"><div id="referred-by-container"><select id="referred-by" class="w-full p-2 border rounded-md"><option value="">None</option></select></div><div><label class="block text-sm">Payment Method*</label><select id="payment-method" class="w-full p-2 border rounded-md" required><option value="" disabled selected>Select payment method</option><option value="cash">Cash</option><option value="upi">UPI</option><option value="both">Both</option></select></div></div><div id="both-payment-fields" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 hidden"><div><label class="block text-sm">Cash Amount (₹)*</label><input type="number" id="cash-amount" class="w-full p-2 border rounded-md" min="0" step="0.01" placeholder="0.00"></div><div><label class="block text-sm">UPI Amount (₹)*</label><input type="number" id="upi-amount" class="w-full p-2 border rounded-md" min="0" step="0.01" placeholder="0.00"></div></div><div id="other-doctor-fields" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 hidden"><div><label class="block text-sm">Doctor Name*</label><input type="text" id="other-doctor-name" class="w-full p-2 border rounded-md" placeholder="Enter doctor name"></div><div><label class="block text-sm">Commission %</label><input type="number" id="other-doctor-commission" class="w-full p-2 border rounded-md" min="0" max="100" step="0.01" placeholder="0" value="0"></div></div></div></fieldset>
+                        <fieldset class="border p-4 rounded-md mb-4"><legend class="px-2 font-semibold">Patient Details</legend><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-sm">Patient Name*</label><input type="text" id="patient-name" class="w-full p-2 border rounded-md" required></div><div><label class="block text-sm">Phone</label><input type="tel" id="patient-phone" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">Age*</label><input type="number" id="patient-age" class="w-full p-2 border rounded-md" required min="0"></div><div><label class="block text-sm">Gender*</label><select id="patient-gender" class="w-full p-2 border rounded-md" required><option value="" disabled selected>Select gender</option><option>Male</option><option>Female</option><option>Other</option></select></div><div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4"><div id="referred-by-container"><select id="referred-by" class="w-full p-2 border rounded-md"><option value="">None</option></select></div><div><label class="block text-sm">Payment Method*</label><select id="payment-method" class="w-full p-2 border rounded-md" required><option value="" disabled selected>Select payment method</option><option value="cash">Cash</option><option value="upi">UPI</option><option value="both">Both</option></select></div></div><div id="both-payment-fields" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 hidden"><div><label class="block text-sm">Cash Amount (₹)*</label><input type="number" id="cash-amount" class="w-full p-2 border rounded-md" min="0" step="0.01" placeholder="0.00"></div><div><label class="block text-sm">UPI Amount (₹)*</label><input type="number" id="upi-amount" class="w-full p-2 border rounded-md" min="0" step="0.01" placeholder="0.00"></div></div><div id="other-doctor-fields" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 hidden"><div><label class="block text-sm">Doctor Name*</label><input type="text" id="other-doctor-name" class="w-full p-2 border rounded-md" placeholder="Enter doctor name"></div><div><label class="block text-sm">Commission %</label><input type="number" id="other-doctor-commission" class="w-full p-2 border rounded-md" min="0" max="100" step="0.01" placeholder="0" value="0"></div></div></div></fieldset>
                 <fieldset class="border p-4 rounded-md mb-4"><legend class="px-2 font-semibold">Bill Items</legend><div id="bill-items" class="space-y-3 mb-3"></div><button type="button" id="add-item-btn" class="px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600">Add Test</button></fieldset>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4"><div class="space-y-2"><div><label class="block text-sm">Discount (₹)</label><input type="number" id="discount-amount" value="0" min="0" step="0.01" class="w-full p-2 border rounded-md"></div><div><label class="block text-sm">GST (%)</label><input type="number" id="gst-percent" value="0" min="0" class="w-full p-2 border rounded-md"></div></div><div class="text-right space-y-1 text-gray-700"><p>Subtotal: <span id="subtotal" class="font-medium text-black">₹0.00</span></p><p>Discount: <span id="discount-display" class="font-medium text-black">₹0.00</span></p><p class="border-t pt-1 mt-1">Total after Discount: <span id="post-discount-total" class="font-medium text-black">₹0.00</span></p><p>GST: <span id="gst-amount" class="font-medium text-black">₹0.00</span></p><p class="font-bold text-xl border-t pt-1 mt-1">Grand Total: <span id="grand-total" class="text-blue-600">₹0.00</span></p></div></div>
                 <div class="flex justify-end gap-4 mt-6"><button type="button" id="close-modal-btn" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 font-semibold">Cancel</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">Save Bill</button></div>
@@ -1381,6 +1381,42 @@
                         };
                     });
                     
+                    // Enable fast keyboard navigation within the billing form
+                    (function enableFormKeyboardNav(formEl) {
+                        const focusableSelector = 'input:not([type=hidden]):not([disabled]), select:not([disabled]), button:not([disabled])';
+                        function getFocusable() {
+                            return Array.from(formEl.querySelectorAll(focusableSelector)).filter(el => el.offsetParent !== null);
+                        }
+                        formEl.addEventListener('keydown', (ev) => {
+                            const focusables = getFocusable();
+                            const currentIndex = focusables.indexOf(document.activeElement);
+                            if (currentIndex === -1) return;
+
+                            const isTextInput = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA';
+
+                            const go = (offset) => {
+                                const nextIndex = Math.max(0, Math.min(focusables.length - 1, currentIndex + offset));
+                                const target = focusables[nextIndex];
+                                if (target) { ev.preventDefault(); target.focus(); if (target.select) { target.select(); } }
+                            };
+
+                            // Enter advances, Shift+Enter goes back
+                            if (ev.key === 'Enter') {
+                                // If on submit button, allow submit default
+                                if (document.activeElement.type === 'submit') return;
+                                go(ev.shiftKey ? -1 : 1);
+                            }
+                            // Up/Down arrows navigate
+                            if (ev.key === 'ArrowDown') { go(1); }
+                            if (ev.key === 'ArrowUp') { go(-1); }
+                            // Backspace on empty field moves back
+                            if (ev.key === 'Backspace' && isTextInput) {
+                                const val = (document.activeElement.value || '').toString();
+                                if (val.length === 0) { go(-1); }
+                            }
+                        });
+                    })(billForm);
+
                     // Note: "Other" doctor selection is now handled in the searchable dropdown above
             
             billForm.onsubmit = async (e) => {
@@ -1391,8 +1427,12 @@
 
                 try {
                     const patientPhone = document.getElementById('patient-phone').value.trim();
+                    const ageValue = parseInt(document.getElementById('patient-age').value);
+                    const genderValue = document.getElementById('patient-gender').value;
+                    if (!Number.isFinite(ageValue) || ageValue <= 0) { throw new Error('Age is required and must be greater than 0'); }
+                    if (!genderValue) { throw new Error('Gender is required'); }
                     let patientId;
-                    const patientDetails = { name: document.getElementById('patient-name').value, age: parseInt(document.getElementById('patient-age').value) || null, gender: document.getElementById('patient-gender').value, phone: patientPhone || null };
+                    const patientDetails = { name: document.getElementById('patient-name').value, age: ageValue, gender: genderValue, phone: patientPhone || null };
                     let patientQuery = patientPhone ? await db.collection('patients').where('phone', '==', patientPhone).limit(1).get() : null;
                     if (patientQuery && !patientQuery.empty) {
                         patientId = patientQuery.docs[0].id;
