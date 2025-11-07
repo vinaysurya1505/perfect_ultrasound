@@ -342,7 +342,7 @@
                             </div>
                         </section>
                         <!-- Feature Cards Section -->
-                        <section class="py-16 bg-[var(--bg-main)]">
+<section id="services" class="py-16 bg-[var(--bg-main)]">
                           <div class="container mx-auto max-w-6xl px-6">
                             <h2 class="text-3xl md:text-4xl font-bold text-center text-[var(--text-main)] mb-12">Our Services</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -433,6 +433,32 @@
                 </div>
             `;
             document.getElementById('go-to-login-nav').onclick = () => navigate('login');
+            // Enhance CTA buttons: Book Appointment -> tel, View Services -> smooth scroll
+            try {
+                const buttons = Array.from(document.querySelectorAll('button, a'));
+                const viewBtn = buttons.find(b => /view\s+services/i.test((b.textContent || '').trim()));
+                if (viewBtn) {
+                    viewBtn.addEventListener('click', (e) => {
+                        const target = document.getElementById('services');
+                        if (target) {
+                            e.preventDefault();
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                }
+                const bookBtn = buttons.find(b => /book\s+appointment/i.test((b.textContent || '').trim()));
+                if (bookBtn) {
+                    bookBtn.addEventListener('click', () => {
+                        window.location.href = 'tel:+919838104111';
+                    });
+                }
+                const callNow = buttons.find(b => /call\s+now/i.test((b.textContent || '').trim()));
+                if (callNow) {
+                    callNow.addEventListener('click', () => {
+                        window.location.href = 'tel:+919838104111';
+                    });
+                }
+            } catch (_) {}
         }
 
         function renderLoginPage() {
