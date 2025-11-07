@@ -332,14 +332,46 @@
                         </nav>
                     </header>
                     <main>
-                        <section 
-                            class="relative h-screen flex items-center justify-center bg-cover bg-center" 
-                            style="background-image: url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop');">
-                            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-                            <div class="relative container mx-auto px-6 text-center text-white">
-                                <h2 class="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">Your Partner in Accurate Diagnostics</h2>
-                                <p class="mt-4 text-lg md:text-xl max-w-2xl mx-auto text-gray-200">State-of-the-art technology ensuring patient care and satisfaction.</p>
+                        <!-- Modern Hero (replaces background image banner) -->
+                        <section class="relative py-20 px-6 bg-[var(--bg-main)] border-b border-[var(--border)]">
+                          <div class="container mx-auto max-w-6xl flex flex-col md:flex-row items-center gap-10">
+                            <!-- Left: Text & CTA -->
+                            <div class="flex-1 space-y-6 text-left">
+                              <div class="inline-block px-4 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">🏥 Your Health, Our Priority</div>
+                              <h1 class="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight text-[var(--text-main)]">Perfect Diagnostic and Ultrasound Centre</h1>
+                              <p class="text-xl text-[var(--text-muted)] max-w-xl">State-of-the-art diagnostic services with accurate results and compassionate care</p>
+                              <div class="flex flex-wrap gap-4 pt-2">
+                                <button class="btn px-8 py-3 rounded-lg text-base font-semibold shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2" style="background:var(--accent)">📞 Book Appointment</button>
+                                <button class="btn px-8 py-3 rounded-lg text-base font-semibold bg-white border border-[var(--accent)] text-[var(--accent)] hover:bg-blue-50 transition focus:outline-none">View Services</button>
+                              </div>
                             </div>
+                            <!-- Right: SVG Illustration -->
+                            <div class="flex-1 flex min-h-[340px] max-w-lg w-full items-center justify-center">
+                              <div class="relative bg-blue-100/80 rounded-3xl shadow-lg p-8 flex items-center justify-center">
+                                <svg class="w-64 h-48" fill="none" viewBox="0 0 320 192" xmlns="http://www.w3.org/2000/svg">
+                                  <defs>
+                                    <linearGradient id="PulseGradHome" x1="0" x2="320" y1="85" y2="140" gradientUnits="userSpaceOnUse">
+                                      <stop stop-color="#2563eb" />
+                                      <stop offset="1" stop-color="#1e40af" />
+                                    </linearGradient>
+                                  </defs>
+                                  <rect x="0" y="0" width="320" height="192" rx="40" fill="#fff"/>
+                                  <polyline points="20,100 80,100 100,40 140,130 160,85 185,135 210,65 240,150 260,100 300,100" stroke="url(#PulseGradHome)" stroke-width="6" fill="none">
+                                    <animate attributeName="points" dur="1.5s" repeatCount="indefinite"
+                                      values="20,100 80,100 100,40 140,130 160,85 185,135 210,65 240,150 260,100 300,100;
+                                              20,100 85,85 110,50 135,130 160,85 190,130 217,65 245,135 270,115 300,100;
+                                              20,100 80,100 100,40 140,130 160,85 185,135 210,65 240,150 260,100 300,100"/>
+                                  </polyline>
+                                  <path d="M160 120C160 120 140 100 140 85C140 71.2 150.2 61 164 61C177.8 61 188 71.2 188 85C188 100 160 120 160 120Z" stroke="#2563eb" stroke-width="4" fill="#e0e7ff">
+                                    <animate attributeName="fill" values="#e0e7ff;#c7d2fe;#e0e7ff" dur="2s" repeatCount="indefinite"/>
+                                  </path>
+                                  <circle cx="273" cy="55" r="16" fill="#2563eb" fill-opacity="0.15"/>
+                                  <circle cx="70" cy="160" r="12" fill="#2563eb" fill-opacity="0.09"/>
+                                  <circle cx="47" cy="44" r="7" fill="#2563eb" fill-opacity="0.18"/>
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
                         </section>
                         <!-- Feature Cards Section -->
 <section id="services" class="py-16 bg-[var(--bg-main)]">
