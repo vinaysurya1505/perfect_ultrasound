@@ -85,15 +85,40 @@
         const storage = firebase.storage();
         const { Timestamp, FieldValue } = firebase.firestore;
 
+        // 🔧 Optimized: Enable Firestore offline persistence to reduce reads
+        firebase.firestore().enablePersistence().catch((err) => {
+            console.warn('Firestore persistence not enabled:', err);
+        });
+
         const appContainer = document.getElementById('app-container');
         const state = {
             user: null,
             currentPage: 'home',
             listeners: [],
+            cache: {}, // 🔧 Optimized: Cache for storing fetched data to avoid refetching
         };
 
         // ========================================================================
-        // --- 2. MODAL & NOTIFICATION UTILITIES ---
+        // --- 2. SAFE FETCH WRAPPER FOR FIRESTORE ---
+        // ========================================================================
+        // 🔧 Optimized: Safe wrapper to handle Firestore collection fetches with error handling
+        async function safeGetCollection(name, limit = 50, orderByField = null, orderDirection = 'desc') {
+            try {
+                let query = db.collection(name).limit(limit);
+                if (orderByField) {
+                    query = query.orderBy(orderByField, orderDirection);
+                }
+                const snapshot = await query.get();
+                return snapshot.docs;
+            } catch (err) {
+                console.error(`Failed to load ${name}:`, err);
+                showModal('Error', `Failed to load ${name} data.`);
+                return [];
+            }
+        }
+
+        // ========================================================================
+        // --- 3. MODAL & NOTIFICATION UTILITIES ---
         // ========================================================================
         const genericModal = document.getElementById('generic-modal');
         const genericModalTitle = document.getElementById('generic-modal-title');
@@ -149,6 +174,7 @@
         // ========================================================================
         // --- 3. AUTHENTICATION LOGIC ---
         // ========================================================================
+        // 🔧 Optimized: Clean up any remaining listeners on auth state change (mostly unused now after onSnapshot removal)
         auth.onAuthStateChanged(user => {
             state.listeners.forEach(unsubscribe => unsubscribe());
             state.listeners = [];
@@ -458,6 +484,10 @@
                                 <tbody id="crud-table-body" class="bg-white divide-y divide-gray-200"></tbody>
                             </table>
                         </div>
+                        <div id="pagination-container" class="px-6 py-4 border-t border-gray-200 text-center hidden">
+                            <button id="load-more-btn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700">Load More</button>
+                            <button id="refresh-btn" class="ml-2 px-4 py-2 bg-gray-600 text-white font-semibold rounded-md hover:bg-gray-700">Refresh</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -562,106 +592,170 @@
                         await db.collection(collectionName).add(data);
                     }
                     resetForm();
+                    // 🔧 Optimized: Reload data after save to show new/updated item
+                    await loadData(true);
                 } catch (error) {
                     console.error("Error saving document: ", error);
                     showModal('Error', "Failed to save data. Please check the console for details.");
                 }
             };
 
-            const query = db.collection(collectionName);
-                    let allDocs = [];
-                    let filteredDocs = [];
+            // 🔧 Optimized: Replaced onSnapshot with one-time get() to reduce Firestore reads
+            let allDocs = [];
+            let filteredDocs = [];
+            let lastDoc = null; // For pagination
+            const paginationContainer = document.getElementById('pagination-container');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const refreshBtn = document.getElementById('refresh-btn');
 
-                    function renderTable(docs) {
-                        tableBody.innerHTML = '';
-                    if (docs.length === 0) {
-                        tableBody.innerHTML = `<tr><td colspan="${tableHeaders.length}" class="text-center py-10 text-gray-500">No ${title}s found.</td></tr>`;
-                        return;
-                    }
+            function renderTable(docs) {
+                tableBody.innerHTML = '';
+                if (docs.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="${tableHeaders.length}" class="text-center py-10 text-gray-500">No ${title}s found.</td></tr>`;
+                    return;
+                }
                         
-                    docs.forEach(doc => {
-                        const row = tableBody.insertRow();
-                        row.innerHTML = renderRow(doc.id, doc.data());
+                docs.forEach(doc => {
+                    const row = tableBody.insertRow();
+                    row.innerHTML = renderRow(doc.id, doc.data());
                         
-                        row.querySelector('.edit-btn').onclick = () => {
-                            editingId = doc.id;
-                            const data = doc.data();
-                            formFields.forEach(f => {
-                                document.getElementById(f.id).value = data[f.key] || '';
-                            });
+                    row.querySelector('.edit-btn').onclick = () => {
+                        editingId = doc.id;
+                        const data = doc.data();
+                        formFields.forEach(f => {
+                            document.getElementById(f.id).value = data[f.key] || '';
+                        });
                             
-                            // Load existing image if editing expenditure with image
-                            if (collectionName === 'expenditures' && data.proofImageUrl) {
-                                const imagePreview = document.getElementById('image-preview');
-                                const imagePreviewContainer = document.getElementById('image-preview-container');
-                                if (imagePreview && imagePreviewContainer) {
-                                    imagePreview.src = data.proofImageUrl;
-                                    imagePreviewContainer.classList.remove('hidden');
-                                }
+                        // Load existing image if editing expenditure with image
+                        if (collectionName === 'expenditures' && data.proofImageUrl) {
+                            const imagePreview = document.getElementById('image-preview');
+                            const imagePreviewContainer = document.getElementById('image-preview-container');
+                            if (imagePreview && imagePreviewContainer) {
+                                imagePreview.src = data.proofImageUrl;
+                                imagePreviewContainer.classList.remove('hidden');
                             }
+                        }
                             
-                            formTitle.textContent = `Edit ${title}`;
-                            submitBtn.textContent = `Update ${title}`;
-                            cancelBtn.classList.remove('hidden');
-                            form.scrollIntoView({ behavior: 'smooth' });
-                        };
+                        formTitle.textContent = `Edit ${title}`;
+                        submitBtn.textContent = `Update ${title}`;
+                        cancelBtn.classList.remove('hidden');
+                        form.scrollIntoView({ behavior: 'smooth' });
+                    };
 
-                        row.querySelector('.delete-btn').onclick = () => {
-                             showConfirmationModal('Confirm Deletion', `Are you sure you want to delete this ${title}? This action cannot be undone.`, async () => {
-                                await db.collection(collectionName).doc(doc.id).delete();
-                            });
-                        };
+                    row.querySelector('.delete-btn').onclick = () => {
+                        showConfirmationModal('Confirm Deletion', `Are you sure you want to delete this ${title}? This action cannot be undone.`, async () => {
+                            await db.collection(collectionName).doc(doc.id).delete();
+                            await loadData(true); // Reload after delete
+                        });
+                    };
+                });
+            }
+
+            function filterData(searchTerm) {
+                if (!searchTerm.trim()) {
+                    filteredDocs = [...allDocs];
+                } else {
+                    filteredDocs = allDocs.filter(doc => {
+                        const data = doc.data();
+                        return formFields.some(field => {
+                            const value = (data[field.key] || '').toString().toLowerCase();
+                            return value.includes(searchTerm.toLowerCase());
+                        });
                     });
+                }
+                        
+                // Sort filtered data
+                if (collectionName === 'expenditures') {
+                    filteredDocs.sort((a, b) => (b.data().date?.toMillis() || 0) - (a.data().date?.toMillis() || 0));
+                } else if (formFields.length > 0) {
+                    const sortKey = formFields[0].key;
+                    filteredDocs.sort((a, b) => (a.data()[sortKey] || '').toString().localeCompare((b.data()[sortKey] || '').toString()));
+                }
+                        
+                renderTable(filteredDocs);
+            }
+
+            // 🔧 Optimized: Load data with pagination support
+            async function loadData(reset = false) {
+                try {
+                    tableBody.innerHTML = `<tr><td colspan="${tableHeaders.length}" class="text-center py-10"><div class="spinner h-8 w-8 mx-auto border-4"></div></td></tr>`;
+                    
+                    if (reset) {
+                        allDocs = [];
+                        lastDoc = null;
                     }
 
-                    function filterData(searchTerm) {
-                        if (!searchTerm.trim()) {
-                            filteredDocs = [...allDocs];
-                        } else {
-                            filteredDocs = allDocs.filter(doc => {
-                                const data = doc.data();
-                                return formFields.some(field => {
-                                    const value = (data[field.key] || '').toString().toLowerCase();
-                                    return value.includes(searchTerm.toLowerCase());
-                                });
-                            });
-                        }
-                        
-                        // Sort filtered data
-                        if (collectionName === 'expenditures') {
-                            filteredDocs.sort((a, b) => (b.data().date?.toMillis() || 0) - (a.data().date?.toMillis() || 0));
-                        } else if (formFields.length > 0) {
-                            const sortKey = formFields[0].key;
-                            filteredDocs.sort((a, b) => (a.data()[sortKey] || '').toString().localeCompare((b.data()[sortKey] || '').toString()));
-                        }
-                        
-                        renderTable(filteredDocs);
+                    // Build query with limit and ordering
+                    let query = db.collection(collectionName).limit(50);
+                    
+                    // Add ordering based on collection type
+                    if (collectionName === 'expenditures') {
+                        query = query.orderBy('date', 'desc');
+                    } else if (formFields.length > 0) {
+                        const sortKey = formFields[0].key;
+                        query = query.orderBy(sortKey, 'asc');
                     }
                     
-                    const unsubscribe = query.onSnapshot(snapshot => {
-                        tableBody.innerHTML = `<tr><td colspan="${tableHeaders.length}" class="text-center py-10"><div class="spinner h-8 w-8 mx-auto border-4"></div></td></tr>`;
-                        
-                        allDocs = snapshot.docs;
-                        filteredDocs = [...allDocs];
-                        
-                        // Client-side sorting
-                        if (collectionName === 'expenditures') {
-                            allDocs.sort((a, b) => (b.data().date?.toMillis() || 0) - (a.data().date?.toMillis() || 0));
-                        } else if (formFields.length > 0) {
-                            const sortKey = formFields[0].key;
-                            allDocs.sort((a, b) => (a.data()[sortKey] || '').toString().localeCompare((b.data()[sortKey] || '').toString()));
-                        }
+                    // Pagination: start after last document if loading more
+                    if (lastDoc && !reset) {
+                        query = query.startAfter(lastDoc);
+                    }
 
-                        setTimeout(() => {
-                            filterData(document.getElementById('search-input').value);
-                }, 300);
+                    const snapshot = await query.get();
+                    
+                    if (reset) {
+                        allDocs = snapshot.docs;
+                    } else {
+                        allDocs = [...allDocs, ...snapshot.docs];
+                    }
+                    
+                    // Update lastDoc for next pagination
+                    if (snapshot.docs.length > 0) {
+                        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+                    }
+
+                    // Cache the data
+                    state.cache[collectionName] = allDocs;
+
+                    // Client-side sorting
+                    if (collectionName === 'expenditures') {
+                        allDocs.sort((a, b) => (b.data().date?.toMillis() || 0) - (a.data().date?.toMillis() || 0));
+                    } else if (formFields.length > 0) {
+                        const sortKey = formFields[0].key;
+                        allDocs.sort((a, b) => (a.data()[sortKey] || '').toString().localeCompare((b.data()[sortKey] || '').toString()));
+                    }
+
+                    filteredDocs = [...allDocs];
+                    
+                    // Show/hide pagination buttons
+                    if (snapshot.docs.length === 50) {
+                        paginationContainer.classList.remove('hidden');
+                        loadMoreBtn.disabled = false;
+                    } else {
+                        loadMoreBtn.disabled = true;
+                        if (allDocs.length > 0) {
+                            paginationContainer.classList.remove('hidden');
+                        }
+                    }
+
+                    filterData(document.getElementById('search-input').value);
+                } catch (error) {
+                    console.error(`Error loading ${collectionName}:`, error);
+                    showModal('Error', `Failed to load ${title} data.`);
+                }
+            }
+
+            // Load initial data
+            loadData(true);
+
+            // Add search functionality
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                filterData(e.target.value);
             });
 
-                    // Add search functionality
-                    document.getElementById('search-input').addEventListener('input', (e) => {
-                        filterData(e.target.value);
-                    });
-            state.listeners.push(unsubscribe);
+            // Pagination buttons
+            loadMoreBtn.onclick = () => loadData(false);
+            refreshBtn.onclick = () => loadData(true);
         }
 
         // ========================================================================
@@ -904,9 +998,10 @@
                         });
                     }
 
+                    // 🔧 Optimized: Added limit to tasks query
                     async function loadTasks() {
                         try {
-                            const snapshot = await db.collection('tasks').orderBy('date', 'desc').get();
+                            const snapshot = await db.collection('tasks').orderBy('date', 'desc').limit(50).get();
                             const tasks = snapshot.docs.map(doc => ({
                                 id: doc.id,
                                 ...doc.data()
@@ -1122,6 +1217,10 @@
                                 <tbody id="bills-list-body" class="bg-white divide-y divide-gray-200"></tbody>
                             </table>
                         </div>
+                        <div id="bills-pagination-container" class="px-6 py-4 border-t border-gray-200 text-center hidden">
+                            <button id="bills-load-more-btn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700">Load More</button>
+                            <button id="bills-refresh-btn" class="ml-2 px-4 py-2 bg-gray-600 text-white font-semibold rounded-md hover:bg-gray-700">Refresh</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -1245,8 +1344,12 @@
                 updateBillTotals();
             }
 
+            // 🔧 Optimized: Added limits to prerequisites queries
             async function loadPrerequisites() {
-                const [testsSnap, doctorsSnap] = await Promise.all([db.collection('tests').get(), db.collection('doctors').get()]);
+                const [testsSnap, doctorsSnap] = await Promise.all([
+                    db.collection('tests').limit(100).get(), 
+                    db.collection('doctors').limit(100).get()
+                ]);
                 allTests = testsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 allDoctors = doctorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         // Create searchable doctor dropdown
@@ -1598,6 +1701,8 @@
                     
                     closeModalBilling();
                     showBillSuccessModal(billRef.id, newBillNumber);
+                    // 🔧 Optimized: Reload bills after creation
+                    await loadBills(true);
 
                 } catch (error) {
                     console.error("Error creating bill: ", error);
@@ -1695,14 +1800,21 @@
                 });
                     }
 
-                    // Load doctors first, then set up bills listener
+                    // 🔧 Optimized: Load doctors and bills with one-time get() instead of onSnapshot
+                    let billsLastDoc = null; // For pagination
+                    const billsPaginationContainer = document.getElementById('bills-pagination-container');
+                    const billsLoadMoreBtn = document.getElementById('bills-load-more-btn');
+                    const billsRefreshBtn = document.getElementById('bills-refresh-btn');
+
                     async function initializeBillingData() {
-                        const doctorsSnap = await db.collection('doctors').get();
+                        // 🔧 Optimized: Add limit to doctors query
+                        const doctorsSnap = await db.collection('doctors').limit(50).get();
                         allDoctors = doctorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         
-                        // Load commission transactions
+                        // 🔧 Optimized: Add limit to commission transactions query
                         const commissionTransactionsSnap = await db.collection('transactions')
                             .where('type', '==', 'commission')
+                            .limit(100)
                             .get();
                         
                         // Create a map of billId -> commission amount
@@ -1716,18 +1828,73 @@
                         
                         console.log('Commission Map:', window.commissionMap);
                         
-                        const unsubscribe = db.collection('bills').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-                            allBills = [];
+                        // Load initial bills
+                        await loadBills(true);
+                    }
+
+                    // 🔧 Optimized: Load bills with pagination support
+                    async function loadBills(reset = false) {
+                        try {
+                            billsListBody.innerHTML = `<tr><td colspan="9" class="text-center py-10"><div class="spinner h-8 w-8 mx-auto border-4"></div></td></tr>`;
+                            
+                            if (reset) {
+                                allBills = [];
+                                billsLastDoc = null;
+                            }
+
+                            // Build query with limit and ordering
+                            let query = db.collection('bills')
+                                .orderBy('createdAt', 'desc')
+                                .limit(50);
+                            
+                            // Pagination: start after last document if loading more
+                            if (billsLastDoc && !reset) {
+                                query = query.startAfter(billsLastDoc);
+                            }
+
+                            const snapshot = await query.get();
+                            
+                            if (reset) {
+                                allBills = [];
+                            }
+                            
                             snapshot.forEach(doc => {
                                 allBills.push({ id: doc.id, ...doc.data() });
                             });
+                            
+                            // Update lastDoc for next pagination
+                            if (snapshot.docs.length > 0) {
+                                billsLastDoc = snapshot.docs[snapshot.docs.length - 1];
+                            }
+
+                            // Cache the data
+                            state.cache['bills'] = allBills;
+
                             filteredBills = allBills;
+                            
+                            // Show/hide pagination buttons
+                            if (snapshot.docs.length === 50) {
+                                billsPaginationContainer.classList.remove('hidden');
+                                billsLoadMoreBtn.disabled = false;
+                            } else {
+                                billsLoadMoreBtn.disabled = true;
+                                if (allBills.length > 0) {
+                                    billsPaginationContainer.classList.remove('hidden');
+                                }
+                            }
+
                             renderBills(filteredBills);
-            });
-            state.listeners.push(unsubscribe);
+                        } catch (error) {
+                            console.error('Error loading bills:', error);
+                            showModal('Error', 'Failed to load bills data.');
+                        }
                     }
                     
                     initializeBillingData();
+
+                    // Pagination buttons for bills
+                    billsLoadMoreBtn.onclick = () => loadBills(false);
+                    billsRefreshBtn.onclick = () => loadBills(true);
 
                     // Search and filter functionality
                     function applyFilters() {
