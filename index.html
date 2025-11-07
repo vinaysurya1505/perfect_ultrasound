@@ -77,13 +77,38 @@
     // ========================================================================
     document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/config')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Config endpoint not available');
+                }
+                return response.json();
+            })
             .then(firebaseConfig => {
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const storage = firebase.storage();
-        const { Timestamp, FieldValue } = firebase.firestore;
+                firebase.initializeApp(firebaseConfig);
+            })
+            .catch(error => {
+                console.warn('Failed to load config from /api/config, using fallback:', error);
+                // Fallback: You can manually set your Firebase config here for local development
+                // Replace these values with your actual Firebase project config
+                const fallbackConfig = {
+                    apiKey: "YOUR_API_KEY",
+                    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+                    projectId: "YOUR_PROJECT_ID",
+                    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+                    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                    appId: "YOUR_APP_ID"
+                };
+                alert('Firebase config not loaded. Please configure your Firebase project or set up the /api/config endpoint.');
+                // Uncomment the line below and fill in your Firebase config for local testing:
+                // firebase.initializeApp(fallbackConfig);
+                return;
+            })
+            .then(() => {
+                if (!firebase.apps.length) return; // Config not loaded
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                const storage = firebase.storage();
+                const { Timestamp, FieldValue } = firebase.firestore;
 
         // 🔧 Optimized: Enable Firestore offline persistence to reduce reads
         firebase.firestore().enablePersistence().catch((err) => {
