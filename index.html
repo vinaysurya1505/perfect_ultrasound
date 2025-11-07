@@ -15,23 +15,73 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        :root {
+          --accent: #2563eb;
+          --accent-hover: #1e40af;
+          --bg-main: #f9fafb;
+          --bg-panel: #fff;
+          --bg-light: #f3f4f6;
+          --border: #e5e7eb;
+          --text-main: #111827;
+          --text-muted: #6b7280;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(--text-main); }
         .sidebar-link { transition: all 0.2s ease-in-out; }
-        .sidebar-link:hover, .sidebar-link.active { background-color: #3b82f6; color: white; }
+        .sidebar-link:hover, .sidebar-link.active {
+          background-color: var(--accent);
+          color: #fff;
+        }
         .modal-bg { background-color: rgba(0,0,0,0.5); z-index: 50; transition: opacity 0.3s ease-in-out; }
-        .modal-content { max-height: 90vh; transition: transform 0.3s ease-in-out; }
-        .spinner { border-top-color: #3498db; animation: spin 1s linear infinite; }
+        .modal-content { max-height: 90vh; transition: transform 0.3s ease-in-out; background: var(--bg-panel) !important; }
+        .spinner { border-top-color: var(--accent); animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @media print {
             body * { visibility: hidden; }
             #pdf-preview, #pdf-preview * { visibility: visible; }
             #pdf-preview { position: absolute; left: 0; top: 0; width: 100%; }
         }
-        /* For custom scrollbars */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Button accent override */
+        .btn,
+        .bg-blue-600, .bg-blue-700, .bg-blue-500 {
+          background-color: var(--accent) !important; color: #fff !important;
+        }
+        .btn:hover, .bg-blue-700:hover, .bg-blue-600:hover {
+          background-color: var(--accent-hover) !important;
+        }
+        .border, .border-gray-200, .border-gray-300, .border-b, .border-t, .border-l, .border-r {
+          border-color: var(--border) !important;
+        }
+        .bg-gray-100, .bg-gray-50 { background: var(--bg-main) !important; }
+        .bg-white { background: var(--bg-panel) !important; }
+        .text-blue-600, .text-blue-700, .text-blue-500 { color: var(--accent) !important; }
+        .focus\:ring-blue-500:focus, .focus\:border-blue-500:focus {
+          box-shadow: 0 0 0 2px var(--accent) !important; border-color: var(--accent) !important;
+        }
+        .hover\:bg-blue-700:hover { background-color: var(--accent-hover) !important; }
+        .rounded-lg, .rounded-xl { border-radius: 0.75rem; }
+        .shadow-2xl, .shadow-lg, .shadow { box-shadow: 0 4px 12px #0001,0 0.5px 2px #00000008; }
+        a { color: var(--accent); }
+        .hover\:underline:hover { text-decoration: underline; }
+        /* Remove stray accent backgrounds from success/neutral buttons */
+        .bg-gray-600, .hover\:bg-gray-700:hover, .bg-gray-700 { background: #6b7280 !important; }
+        .bg-gray-200, .hover\:bg-gray-300:hover { background: #f3f4f6 !important; color: var(--text-main) !important; }
+
+        /* Table bg fix for neutral look */
+        .bg-gray-50, .bg-light { background: var(--bg-light) !important; }
+
+        /* Card-style panels override */
+        .rounded-xl.bg-white, .rounded-xl.bg-gray-50, .rounded-xl.bg-gray-100 { box-shadow: 0 2px 12px #0001; border: 1px solid var(--border); }
+
+        /* If you have .primary, .accent, or .outline custom classes, normalize here too */
+        .primary, .accent { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+        .primary:hover, .accent:hover { background: var(--accent-hover) !important; }
+
+        /* Remove any multi-color accent remnants (success/error excluded) */
+        /* ...existing custom style or utility fixups as needed... */
     </style>
 </head>
 <body class="bg-gray-100">
