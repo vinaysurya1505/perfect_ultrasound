@@ -2180,15 +2180,20 @@
             content.innerHTML = `<div id="dashboard-loader" class="text-center py-10"><div class="spinner h-12 w-12 mx-auto border-4"></div></div><div id="dashboard-content" class="hidden"></div>`;
 
             try {
+                // Check if user is authenticated
+                if (!state.user) {
+                    throw new Error('User not authenticated. Please log in.');
+                }
+
                 // Fetch today's data
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const startOfDay = Timestamp.fromDate(today);
 
                 const [patientsSnap, transactionsSnap, expendituresSnap] = await Promise.all([
-                    db.collection('patients').where('createdAt', '>=', startOfDay).get(),
-                    db.collection('transactions').where('date', '>=', startOfDay).get(),
-                    db.collection('expenditures').where('date', '>=', startOfDay).get()
+                    db.collection('patients').where('createdAt', '>=', startOfDay).limit(100).get(),
+                    db.collection('transactions').where('date', '>=', startOfDay).limit(100).get(),
+                    db.collection('expenditures').where('date', '>=', startOfDay).limit(100).get()
                 ]);
 
                 const dailyPatients = patientsSnap.size;
@@ -2453,8 +2458,14 @@
 
             } catch (error) {
                 console.error("Error loading dashboard:", error);
-                document.getElementById('dashboard-loader').textContent = "Failed to load dashboard data.";
-                showModal('Error', 'Failed to load dashboard data.');
+                let errorMessage = 'Failed to load dashboard data.';
+                if (error.message && error.message.includes('permission')) {
+                    errorMessage = 'Permission denied. Please check your Firestore security rules. Make sure you are logged in and rules allow authenticated users to read data.';
+                } else if (error.message && error.message.includes('authenticated')) {
+                    errorMessage = 'Please log in to view the dashboard.';
+                }
+                document.getElementById('dashboard-loader').innerHTML = `<div class="text-red-600">${errorMessage}</div>`;
+                showModal('Error', errorMessage);
             }
         }
 
