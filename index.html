@@ -604,6 +604,7 @@
             let allDocs = [];
             let filteredDocs = [];
             let lastDoc = null; // For pagination
+            let isInitialLoad = true; // Track if this is the first load
             const paginationContainer = document.getElementById('pagination-container');
             const loadMoreBtn = document.getElementById('load-more-btn');
             const refreshBtn = document.getElementById('refresh-btn');
@@ -675,7 +676,7 @@
                 renderTable(filteredDocs);
             }
 
-            // 🔧 Optimized: Load data with pagination support
+            // 🔧 Optimized: Load data with pagination support - Initial: 5 items, Subsequent: 10 items
             async function loadData(reset = false) {
                 try {
                     tableBody.innerHTML = `<tr><td colspan="${tableHeaders.length}" class="text-center py-10"><div class="spinner h-8 w-8 mx-auto border-4"></div></td></tr>`;
@@ -683,10 +684,14 @@
                     if (reset) {
                         allDocs = [];
                         lastDoc = null;
+                        isInitialLoad = true;
                     }
 
+                    // 🔧 Optimized: Load 5 items initially, then 10 items per "Load More" click
+                    const limit = isInitialLoad ? 5 : 10;
+                    
                     // Build query with limit and ordering
-                    let query = db.collection(collectionName).limit(50);
+                    let query = db.collection(collectionName).limit(limit);
                     
                     // Add ordering based on collection type
                     if (collectionName === 'expenditures') {
@@ -714,6 +719,11 @@
                         lastDoc = snapshot.docs[snapshot.docs.length - 1];
                     }
 
+                    // Mark that initial load is done
+                    if (isInitialLoad) {
+                        isInitialLoad = false;
+                    }
+
                     // Cache the data
                     state.cache[collectionName] = allDocs;
 
@@ -727,8 +737,8 @@
 
                     filteredDocs = [...allDocs];
                     
-                    // Show/hide pagination buttons
-                    if (snapshot.docs.length === 50) {
+                    // Show/hide pagination buttons - show if we got the full limit (5 or 10)
+                    if (snapshot.docs.length === limit) {
                         paginationContainer.classList.remove('hidden');
                         loadMoreBtn.disabled = false;
                     } else {
@@ -1802,6 +1812,7 @@
 
                     // 🔧 Optimized: Load doctors and bills with one-time get() instead of onSnapshot
                     let billsLastDoc = null; // For pagination
+                    let billsIsInitialLoad = true; // Track if this is the first load
                     const billsPaginationContainer = document.getElementById('bills-pagination-container');
                     const billsLoadMoreBtn = document.getElementById('bills-load-more-btn');
                     const billsRefreshBtn = document.getElementById('bills-refresh-btn');
@@ -1832,7 +1843,7 @@
                         await loadBills(true);
                     }
 
-                    // 🔧 Optimized: Load bills with pagination support
+                    // 🔧 Optimized: Load bills with pagination support - Initial: 5 items, Subsequent: 10 items
                     async function loadBills(reset = false) {
                         try {
                             billsListBody.innerHTML = `<tr><td colspan="9" class="text-center py-10"><div class="spinner h-8 w-8 mx-auto border-4"></div></td></tr>`;
@@ -1840,12 +1851,16 @@
                             if (reset) {
                                 allBills = [];
                                 billsLastDoc = null;
+                                billsIsInitialLoad = true;
                             }
+
+                            // 🔧 Optimized: Load 5 items initially, then 10 items per "Load More" click
+                            const limit = billsIsInitialLoad ? 5 : 10;
 
                             // Build query with limit and ordering
                             let query = db.collection('bills')
                                 .orderBy('createdAt', 'desc')
-                                .limit(50);
+                                .limit(limit);
                             
                             // Pagination: start after last document if loading more
                             if (billsLastDoc && !reset) {
@@ -1867,13 +1882,18 @@
                                 billsLastDoc = snapshot.docs[snapshot.docs.length - 1];
                             }
 
+                            // Mark that initial load is done
+                            if (billsIsInitialLoad) {
+                                billsIsInitialLoad = false;
+                            }
+
                             // Cache the data
                             state.cache['bills'] = allBills;
 
                             filteredBills = allBills;
                             
-                            // Show/hide pagination buttons
-                            if (snapshot.docs.length === 50) {
+                            // Show/hide pagination buttons - show if we got the full limit (5 or 10)
+                            if (snapshot.docs.length === limit) {
                                 billsPaginationContainer.classList.remove('hidden');
                                 billsLoadMoreBtn.disabled = false;
                             } else {
